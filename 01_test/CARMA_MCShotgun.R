@@ -1,6 +1,9 @@
 ###The function that defines neighborhood model space
 set.gamma.func<-function(input.S,condition.index=NULL,p){
   
+  #S - vector of causal variants in index configuration
+  #condition.index - outliers
+  
   add.function<-function(S_sub,y){
     #this fucntion combines S_sub and y and sorts each row
     results<-apply(as.matrix(S_sub),1,function(x){return(sort(c(x,y)))})
@@ -96,40 +99,7 @@ set.gamma.func<-function(input.S,condition.index=NULL,p){
   }
   return(results)
 }
-duplicated.dgCMatrix <- function (dgCMat, MARGIN) {
-  MARGIN <- as.integer(MARGIN)
-  n <- nrow(dgCMat)
-  p <- ncol(dgCMat)
-  J <- rep(1:p, diff(dgCMat@p))
-  I <- dgCMat@i + 1
-  x <- dgCMat@x
-  if (MARGIN == 1L) {
-    ## check duplicated rows
-    names(x) <- J
-    RowLst <- split(x, I)
-    is_empty <- setdiff(1:n, I)
-    result <- duplicated.default(RowLst)
-  } else if (MARGIN == 2L) {
-    ## check duplicated columns
-    names(x) <- I
-    ColLst <- split(x, J)
-    is_empty <- setdiff(1:p, J)
-    result <- duplicated.default(ColLst)
-  } else {
-    warning("invalid MARGIN; return NULL")
-    result <- NULL
-  }
-  
-  if(any(is_empty)){
-    out <- logical(if(MARGIN == 1L) n else p)
-    out[-is_empty] <- result
-    if(length(is_empty) > 1)
-      out[is_empty[-1]] <- TRUE
-    result <- out
-  }
-  
-  result
-}
+
 match.dgCMatrix <- function (dgCMat1,dgCMat2) {
   #  dgCMat1=B.list[[2]]
   # dgCMat2=add.B[[2]]
@@ -188,35 +158,14 @@ PIP.func<-function(likeli,model.space,p){
   return(result.prob)
 }
 
-index.fun.inner<-function(x,p){
-  #m<-as(as(as(matrix(0,nrow=nrow(x),ncol=p), "TsparseMatrix"), "generalMatrix"), "TsparseMatrix")
+index.fun<-function(x,p){
   m=as(matrix(0,nrow=nrow(x),ncol=p), "TsparseMatrix")
-  #m=matrix(0,nrow=nrow(x),ncol=p)
   m@i<-as.integer(rep(1:nrow(x)-1,each=ncol(x)))
   m@j<-as.integer(c(t(x))-1)
   m@x=rep(1,nrow(x)*ncol(x))
   m<-as(m,"CsparseMatrix")
   return(m)
 }
-index.fun<-function(outer.x,Max.Model.Dimins=10,p){
-  if(nrow(outer.x)>1000){
-    index.bins<-which((1:nrow(outer.x))%%floor(nrow(outer.x)/Max.Model.Dimins)==0)
-    result.m<-index.fun.inner(outer.x[1:index.bins[1],,drop=F],p)
-    for(b in 1:(length(index.bins)-1)){
-      result.m<-rbind(result.m,index.fun.inner(outer.x[(index.bins[b]+1):index.bins[b+1],,drop=F]),p)
-    }
-    if(index.bins[length(index.bins)]!=nrow(outer.x)){
-      result.m<-rbind(result.m,index.fun.inner(outer.x[(index.bins[length(index.bins)]+1):nrow(outer.x),,drop=F]),p)
-    }
-  }else{
-    result.m<-index.fun.inner(outer.x,p)
-  }
-  return(result.m)
-}
-
-
-
-
 
 
 

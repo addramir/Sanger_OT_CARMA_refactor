@@ -4,7 +4,7 @@ library(CARMA)
 library(Matrix)
 
 source("CARMA_miscs.R")
-source("CARMA_MCShotgun.R")
+#source("CARMA_MCShotgun.R")
 
 #ASSUMPTIONS 
 w.list=NULL
@@ -44,14 +44,26 @@ all.epsilon.threshold<-epsilon.threshold*p_snp
 t0=Sys.time()
 #input.conditional.S.list = all.C.list[[4]]
 #C.list = all.C.list[[2]]
-save.image("Zero_MCH_run.RData")
-all.C.list<-Module.Cauchy.Shotgun(z,ld,epsilon=epsilon.list,
+#save.image("Zero_MCH_run.RData")
+#all.C.list<-Module.Cauchy.Shotgun(z,ld,epsilon=epsilon.list,
+#                                  Max.Model.Dim=Max.Model.Dim,lambda = 1,
+#                                  outlier.switch=outlier.switch,tau=tau,
+#                                  num.causal = num.causal,y.var=y.var,
+#                                  label = "l",output.labels = output.labels,
+#                                  effect.size.prior=effect.size.prior,
+#                                  inner.all.iter = all.inner.iter)
+
+
+source("new_MCS_fun.R")
+all.C.list<-MCS_modified(z,ld,epsilon=epsilon.list,
                                   Max.Model.Dim=Max.Model.Dim,lambda = 1,
                                   outlier.switch=outlier.switch,tau=tau,
                                   num.causal = num.causal,y.var=y.var,
                                   label = "l",output.labels = output.labels,
                                   effect.size.prior=effect.size.prior,
                                   inner.all.iter = all.inner.iter)
+
+
 t1=Sys.time()-t0
 print(paste0('This is locus burning time'))
 print((t1))
@@ -71,13 +83,18 @@ for(g in 1:all.iter){
   
   #######Fine-mapping step for each locus, i.e., the E-step in the EM algorithm
   t0=Sys.time()
-  
-  source("CARMA_MCShotgun.R")
-  
-  all.C.list<-Module.Cauchy.Shotgun(z=z,ld,input.conditional.S.list = all.C.list[[4]],
+
+#  all.C.list<-Module.Cauchy.Shotgun(z=z,ld,input.conditional.S.list = all.C.list[[4]],
+#                                    y.var=y.var,num.causal = num.causal,epsilon=epsilon.list,
+#                                    Max.Model.Dim=Max.Model.Dim,
+#                                    C.list = all.C.list[[2]],
+#                                    outlier.switch=outlier.switch,tau=tau,
+#                                    lambda = 1, label = "l",output.labels = output.labels,
+#                                    effect.size.prior=effect.size.prior,inner.all.iter = all.inner.iter)
+
+    all.C.list<-MCS_modified(z=z,ld,input.conditional.S.list = all.C.list[[4]],
                                     Max.Model.Dim=Max.Model.Dim,
                                     y.var=y.var,num.causal = num.causal,epsilon=epsilon.list,
-                                    C.list = all.C.list[[2]],
                                     outlier.switch=outlier.switch,tau=tau,
                                     lambda = 1, label = "l",output.labels = output.labels,
                                     effect.size.prior=effect.size.prior,inner.all.iter = all.inner.iter)
