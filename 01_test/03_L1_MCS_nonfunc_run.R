@@ -1,10 +1,14 @@
 setwd("~/Projects/Sanger_OT_CARMA_refactor/01_test/")
 load("test.RData")
-library(CARMA)
-library(Matrix)
+#library(CARMA)
+library(Rcpp)
+#library(Matrix)
 
 source("CARMA_miscs.R")
 #source("CARMA_MCShotgun.R")
+sourceCpp("./ind_Normal_fixed_sigma_marginal.cpp")
+sourceCpp("./outlier_ind_Normal_marginal.cpp")
+source("new_MCS_fun.R")
 
 #ASSUMPTIONS 
 w.list=NULL
@@ -54,12 +58,10 @@ t0=Sys.time()
 #                                  inner.all.iter = all.inner.iter)
 
 
-source("new_MCS_fun.R")
 all.C.list<-MCS_modified(z,ld,epsilon=epsilon.list,
                                   Max.Model.Dim=Max.Model.Dim,lambda = 1,
                                   outlier.switch=outlier.switch,tau=tau,
                                   num.causal = num.causal,y.var=y.var,
-                                  label = "l",output.labels = output.labels,
                                   effect.size.prior=effect.size.prior,
                                   inner.all.iter = all.inner.iter)
 
@@ -96,7 +98,7 @@ for(g in 1:all.iter){
                                     Max.Model.Dim=Max.Model.Dim,
                                     y.var=y.var,num.causal = num.causal,epsilon=epsilon.list,
                                     outlier.switch=outlier.switch,tau=tau,
-                                    lambda = 1, label = "l",output.labels = output.labels,
+                                    lambda = 1,
                                     effect.size.prior=effect.size.prior,inner.all.iter = all.inner.iter)
   t1=Sys.time()-t0
   print(paste0('This is locus computing time'))

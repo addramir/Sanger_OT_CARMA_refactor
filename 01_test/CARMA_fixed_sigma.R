@@ -771,6 +771,9 @@ CARMA_fixed_sigma<-function(z.list,ld.list,w.list=NULL,lambda.list=NULL,output.l
                 aa[which(is.nan(aa))]<-min(aa)
               }
               set.star$gamma.set.index[i] <-c(sample(1:length(set.gamma.margin[[i]]),1,prob=exp(aa)))
+              
+              set.star$gamma.set.index[i]=1#to delete
+              
               set.star$margin[i]<-set.gamma.margin[[i]][  set.star$gamma.set.index[i]]
               rm(aa)
             }
@@ -788,6 +791,9 @@ CARMA_fixed_sigma<-function(z.list,ld.list,w.list=NULL,lambda.list=NULL,output.l
                   
                   set.star$gamma.set.index[i]<-c(sample((1:length(set.gamma.margin[[i]])),
                                                         1,prob=exp(aa)))
+                  
+                  set.star$gamma.set.index[i]=2#to delete
+                  
                   set.star$margin[i]<-set.gamma.margin[[i]][  set.star$gamma.set.index[i]]
                   
                   test.S<-set.gamma[[i]][set.star$gamma.set.index[i],]
@@ -833,6 +839,9 @@ CARMA_fixed_sigma<-function(z.list,ld.list,w.list=NULL,lambda.list=NULL,output.l
                 
                 set.star$gamma.set.index[i]<-c(sample((1:length(set.gamma.margin[[i]])),
                                                       1,prob=exp(aa)))
+                
+                set.star$gamma.set.index[i]=1#to delete
+                
                 set.star$margin[i]<-set.gamma.margin[[i]][  set.star$gamma.set.index[i]]
                 rm(aa)
               }
@@ -843,10 +852,16 @@ CARMA_fixed_sigma<-function(z.list,ld.list,w.list=NULL,lambda.list=NULL,output.l
               set.star<-set.star[-2,]
               aa<-set.star$margin-current.log.margin-max(set.star$margin-current.log.margin)
               sec.sample<-sample(c(1,3),1,prob=exp(aa))
+              
+              sec.sample=1#to delete
+              
               S<-set.gamma[[sec.sample]][set.star$gamma.set.index[[which(sec.sample==set.star$set.index)]] ,]
             }else{
               aa<-set.star$margin-current.log.margin-max(set.star$margin-current.log.margin)
               sec.sample<-sample(1:3,1,prob=exp(aa) )
+              
+              sec.sample=round((exp(aa)[1]))%%2+1#to delete
+              
               S<-set.gamma[[sec.sample]][set.star$gamma.set.index[[sec.sample]] ,]
             }
             
@@ -860,6 +875,9 @@ CARMA_fixed_sigma<-function(z.list,ld.list,w.list=NULL,lambda.list=NULL,output.l
             
             set.star$gamma.set.index[2] <-c(sample((1:length(set.gamma.margin[[2]]))[order(exp(aa),decreasing = T)[1:(min(length(aa),floor(p/2)))]],
                                                    1,prob=exp(aa)[order(exp(aa),decreasing = T)[1:(min(length(aa),floor(p/2)))]]))
+            
+            set.star$gamma.set.index[2]=1#to delete
+            
             set.star$margin[2]<-set.gamma.margin[[2]][  set.star$gamma.set.index[2]]
             
             S<-set.gamma[[2]][set.star$gamma.set.index[2],]

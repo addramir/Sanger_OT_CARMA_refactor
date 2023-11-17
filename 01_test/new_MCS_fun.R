@@ -100,43 +100,6 @@ set.gamma.func<-function(input.S,condition.index=NULL,p){
   return(results)
 }
 
-match.dgCMatrix <- function (dgCMat1,dgCMat2) {
-  #  dgCMat1=B.list[[2]]
-  # dgCMat2=add.B[[2]]
-  n1 <- nrow(dgCMat1)
-  p1 <- ncol(dgCMat1)
-  J1 <- rep(1:p1, diff(dgCMat1@p))
-  I1 <- dgCMat1@i + 1
-  x1 <- dgCMat1@x
-  n2 <- nrow(dgCMat2)
-  p2 <- ncol(dgCMat2)
-  J2 <- rep(1:p2, diff(dgCMat2@p))
-  I2 <- dgCMat2@i + 1
-  x2 <- dgCMat2@x
-  ## check duplicated rows
-  names(x1) <- J1
-  RowLst1 <- split(J1, I1)
-  is_empty1<- setdiff(1:n1, I1)
-  ## check duplicated rows
-  names(x2) <- J2
-  RowLst2 <- split(J2, I2)
-  is_empty2 <- setdiff(1:n2, I2)
-  result<-(match(RowLst2,RowLst1))
-  if(any(which(result>is_empty1))){
-    result[which(result>=is_empty1)]=result[which(result>=is_empty1)]+1
-  }
-  if(any(is_empty1)){
-    if(any(is_empty2)){
-      result<-c(is_empty1,result)  
-    }
-  }else{
-    if(any(is_empty2)){
-      result<-c(NA,result)  
-    }
-  }
-  return(result)
-  
-}
 ####Function that computes posterior inclusion probability based on the marginal likelihood and model space
 PIP.func<-function(likeli,model.space,p){
   infi.index<-which(is.infinite(likeli))
@@ -159,11 +122,10 @@ PIP.func<-function(likeli,model.space,p){
 }
 
 index.fun<-function(x,p){
-  m=as(matrix(0,nrow=nrow(x),ncol=p), "TsparseMatrix")
-  m@i<-as.integer(rep(1:nrow(x)-1,each=ncol(x)))
-  m@j<-as.integer(c(t(x))-1)
-  m@x=rep(1,nrow(x)*ncol(x))
-  m<-as(m,"CsparseMatrix")
+  m=matrix(0,nrow=nrow(x),ncol=p)
+  for (ind_raw in 1:nrow(x)){
+    m[ind_raw,x[ind_raw,]]=1
+  }
   return(m)
 }
 
@@ -172,8 +134,8 @@ index.fun<-function(x,p){
 
 #########The module function of the CARMA fine-mapping step for each locus included in the analysis##########
 
-MCS_modified<-function(z,ld.matrix,Max.Model.Dim=1e+4,lambda,label,
-                                num.causal=10,output.labels,y.var=1,
+MCS_modified<-function(z,ld.matrix,Max.Model.Dim=1e+4,lambda,
+                                num.causal=10,y.var=1,
                                 effect.size.prior=effect.size.prior,
                                 outlier.switch,input.conditional.S.list=NULL,tau=1/0.05^2,
                                 epsilon=1e-3,inner.all.iter=10){
@@ -195,10 +157,10 @@ MCS_modified<-function(z,ld.matrix,Max.Model.Dim=1e+4,lambda,label,
     result<-dim.model*log(lambda)+lfactorial(p-dim.model)-lfactorial(p)
     return(result)
   }
-  marginal_likelihood=ind_Normal_fixed_sigma_marginal
+  marginal_likelihood=ind_Normal_fixed_sigma_marginal_external
   tau.sample<-tau
   if(outlier.switch){
-    outlier_likelihood=outlier_ind_Normal_marginal
+    outlier_likelihood=outlier_ind_Normal_marginal_external
     outlier.tau=tau.sample
   }
   
@@ -213,12 +175,12 @@ MCS_modified<-function(z,ld.matrix,Max.Model.Dim=1e+4,lambda,label,
   
   S<-NULL
   
-  null.model<-Matrix(nrow = 1,ncol=p,data=0,sparse = T)
+  null.model<-matrix(nrow = 1,ncol=p,data=0)
   null.margin<-prior.dist(null.model)
 
   B.list<-list()
   B.list[[1]]<-prior.dist(null.model)
-  B.list[[2]]<-Matrix(nrow = 1,ncol=p,data=0,sparse = T)
+  B.list[[2]]<-matrix(nrow = 1,ncol=p,data=0)
   if(length(input.conditional.S.list)==0){
     conditional.S.list<-list()
     conditional.S=NULL
@@ -246,7 +208,7 @@ MCS_modified<-function(z,ld.matrix,Max.Model.Dim=1e+4,lambda,label,
       matrix.gamma<-list()
       
       if(length(working.S)!=0){
-        S.model<-as(Matrix(nrow=1,ncol=p,sparse = T,data=0),'CsparseMatrix')
+        S.model<-matrix(nrow=1,ncol=p,data=0)
         S.model[,working.S]<-1
         p_S=length(working.S)
         current.log.margin<-marginal_likelihood(working.S,Sigma,z,tau=tau.sample,p_S=p_S,y.var)+prior.dist(S.model)
@@ -269,7 +231,7 @@ MCS_modified<-function(z,ld.matrix,Max.Model.Dim=1e+4,lambda,label,
       }
       add.B<-list()
       add.B[[1]]<-NULL
-      add.B[[2]]<-as(Matrix(nrow=0,ncol=p,sparse = T,data=0),'CsparseMatrix')
+      add.B[[2]]<-matrix(nrow=0,ncol=p,data=0)
       for(i in 1:length(set.gamma)){
         if (!is.null(set.gamma.margin[[i]])){
           add.B[[1]]<-c(add.B[[1]],set.gamma.margin[[i]])
@@ -278,16 +240,16 @@ MCS_modified<-function(z,ld.matrix,Max.Model.Dim=1e+4,lambda,label,
       }
       ########## add visited models into the storage space of models###############
       
+      B.list[[1]]<-c((B.list[[1]]),(add.B[[1]]))
+      B.list[[2]]<-rbind(B.list[[2]],add.B[[2]])
       
-      add.index<-match.dgCMatrix(B.list[[2]],add.B[[2]])
-      
-      if(length(na.omit(add.index))!=0){
-        B.list[[1]]<-c((B.list[[1]]),(add.B[[1]][is.na(add.index)]))
-        B.list[[2]]<-rbind(B.list[[2]],add.B[[2]][is.na(add.index),,drop=F])
-      }else{
-        B.list[[1]]<-c((B.list[[1]]),(add.B[[1]]))
-        B.list[[2]]<-rbind(B.list[[2]],add.B[[2]])
+      ind1=apply(as.matrix(B.list[[2]]),MAR=1,FUN=paste0,collapse="")
+      ind1=which(duplicated(ind1))
+      if (length(ind1)>0){
+        B.list[[1]]=B.list[[1]][-ind1]
+        B.list[[2]]=B.list[[2]][-ind1,]
       }
+      
       B.list[[2]]<-B.list[[2]][order(B.list[[1]],decreasing = T),]
       B.list[[1]]<-B.list[[1]][order(B.list[[1]],decreasing = T)]
       
@@ -389,16 +351,21 @@ MCS_modified<-function(z,ld.matrix,Max.Model.Dim=1e+4,lambda,label,
     if(!is.null(conditional.S)){
       all.c.index<-c()
       
-      
       for(tt in conditional.S){
-        c.index<-(B.list[[2]]@i[min(length(B.list[[2]]@i),(B.list[[2]]@p[tt]+1)):B.list[[2]]@p[tt+1]])+1
+        c.index=which(B.list[[2]][,tt]==1)
         all.c.index<-c(all.c.index,c.index)
       }
       
       all.c.index<-unique(all.c.index)
-      temp.B.list<-list()
-      temp.B.list[[1]]<-B.list[[1]][-all.c.index]
-      temp.B.list[[2]]<-B.list[[2]][-all.c.index,]
+      if (length(all.c.index)>0){
+        temp.B.list<-list()
+        temp.B.list[[1]]<-B.list[[1]][-all.c.index]
+        temp.B.list[[2]]<-B.list[[2]][-all.c.index,]
+      } else{
+        temp.B.list<-list()
+        temp.B.list[[1]]<-B.list[[1]]
+        temp.B.list[[2]]<-B.list[[2]]
+      }
     }else{
       temp.B.list<-list()
       temp.B.list[[1]]<-B.list[[1]]

@@ -2,8 +2,8 @@ setwd("~/Projects/Sanger_OT_CARMA_refactor/01_test/")
 load("Zero_MCH_run.RData")
 library(CARMA)
 library(Matrix)
-source("CARMA_MCShotgun.R")
-
+#source("CARMA_MCShotgun.R")
+source("new_MCS_fun.R")
 ####
 z=z
 ld.matrix=ld
@@ -19,9 +19,9 @@ output.labels = output.labels
 effect.size.prior=effect.size.prior
 inner.all.iter = all.inner.iter
 
-input.conditional.S.list = all.C.list[[4]]
-#C.list = NULL
-
+#input.conditional.S.list = all.C.list[[4]]
+C.list = NULL
+input.conditional.S.list = NULL
 
 #### START
 
@@ -36,7 +36,8 @@ p<-length(z)
 
 #Poisson.prior.dist
 prior.dist<-function(t){
-  dim.model<-sum(t)
+  l=unlist(strsplit(t,split=","))
+  dim.model<-length(l)
   result<-dim.model*log(lambda)+lfactorial(p-dim.model)-lfactorial(p)
   return(result)
 }
@@ -58,16 +59,14 @@ Sigma<-as.matrix(ld.matrix)
 
 S<-NULL
 
-null.model<-Matrix(nrow = 1,ncol=p,data=0,sparse = T)
+null.model<-""
 null.margin<-prior.dist(null.model)
 if(is.null(C.list)){
-  C.list<-list()
-  C.list[[2]]<-list()
-  C.list[[1]]<-list()
+  C.list<-vector("list",2)
 }
 B.list<-list()
 B.list[[1]]<-prior.dist(null.model)
-B.list[[2]]<-Matrix(nrow = 1,ncol=p,data=0,sparse = T)
+B.list[[2]]<-""
 if(length(input.conditional.S.list)==0){
   conditional.S.list<-list()
   conditional.S=NULL
@@ -95,8 +94,7 @@ for(l in 1:inner.all.iter){
     matrix.gamma<-list()
     
     if(length(working.S)!=0){
-      S.model<-as(Matrix(nrow=1,ncol=p,sparse = T,data=0),'CsparseMatrix')
-      S.model[,working.S]<-1
+      S.model<-paste0(sort(working.S),collapse = ",")
       p_S=length(working.S)
       current.log.margin<-marginal_likelihood(working.S,Sigma,z,tau=tau.sample,p_S=p_S,y.var)+prior.dist(S.model)
     }else{
@@ -108,36 +106,37 @@ for(l in 1:inner.all.iter){
         matrix.gamma[[i]]<-index.fun(set.gamma[[i]],p=p)
         p_S=dim(set.gamma[[i]])[2]
         set.gamma.margin[[i]]<-apply(set.gamma[[i]],1,marginal_likelihood,Sigma=Sigma,z=z,tau=tau.sample,p_S=p_S,y_sigma=y.var)
-        set.gamma.prior[[i]]<-apply(matrix.gamma[[i]],1,prior.dist)
+        set.gamma.prior[[i]]<-sapply(matrix.gamma[[i]],prior.dist)
         set.gamma.margin[[i]]=set.gamma.prior[[i]]+set.gamma.margin[[i]]
       } else {
         set.gamma.margin[[i]]=null.margin
-        set.gamma.prior[[i]]=NULL
+        set.gamma.prior[[i]]=0
         matrix.gamma[[i]]=null.model
       }
     }
-    add.B<-list()
-    add.B[[1]]<-NULL
-    add.B[[2]]<-as(Matrix(nrow=0,ncol=p,sparse = T,data=0),'CsparseMatrix')
+    add.B<-vector("list",2)
     for(i in 1:length(set.gamma)){
       if (!is.null(set.gamma.margin[[i]])){
         add.B[[1]]<-c(add.B[[1]],set.gamma.margin[[i]])
-        add.B[[2]]<-rbind(add.B[[2]],matrix.gamma[[i]])
+        add.B[[2]]<-c(add.B[[2]],matrix.gamma[[i]])
       }
     }
+    names(add.B[[1]])=NULL
+    names(add.B[[2]])=NULL
     ########## add visited models into the storage space of models###############
     
     
-    add.index<-match.dgCMatrix(B.list[[2]],add.B[[2]])
-
-    if(length(na.omit(add.index))!=0){
-      B.list[[1]]<-c((B.list[[1]]),(add.B[[1]][is.na(add.index)]))
-      B.list[[2]]<-rbind(B.list[[2]],add.B[[2]][is.na(add.index),,drop=F])
-    }else{
-      B.list[[1]]<-c((B.list[[1]]),(add.B[[1]]))
-      B.list[[2]]<-rbind(B.list[[2]],add.B[[2]])
+    B.list[[1]]<-c((B.list[[1]]),(add.B[[1]]))
+    B.list[[2]]<-c(B.list[[2]],add.B[[2]])
+    
+    ind1=B.list[[2]]
+    ind1=which(duplicated(ind1))
+    if (length(ind1)>0){
+      B.list[[1]]=B.list[[1]][-ind1]
+      B.list[[2]]=B.list[[2]][-ind1]
     }
-    B.list[[2]]<-B.list[[2]][order(B.list[[1]],decreasing = T),]
+    
+    B.list[[2]]<-B.list[[2]][order(B.list[[1]],decreasing = T)]
     B.list[[1]]<-B.list[[1]][order(B.list[[1]],decreasing = T)]
     
     ###################Select next visiting model###############
@@ -237,36 +236,26 @@ for(l in 1:inner.all.iter){
   
   if(!is.null(conditional.S)){
     all.c.index<-c()
-    
-    
     for(tt in conditional.S){
-      c.index<-(B.list[[2]]@i[min(length(B.list[[2]]@i),(B.list[[2]]@p[tt]+1)):B.list[[2]]@p[tt+1]])+1
-      all.c.index<-c(all.c.index,c.index)
+      l=strsplit(B.list[[2]],split=",")
+      ind=which(sapply(l,FUN=function(x){tt%in%x}))
+      all.c.index<-c(all.c.index,ind)
     }
-    
+  
     all.c.index<-unique(all.c.index)
-    temp.B.list<-list()
+    
+    temp.B.list<-B.list
     temp.B.list[[1]]<-B.list[[1]][-all.c.index]
-    temp.B.list[[2]]<-B.list[[2]][-all.c.index,]
+    temp.B.list[[2]]<-B.list[[2]][-all.c.index]
   }else{
-    temp.B.list<-list()
-    temp.B.list[[1]]<-B.list[[1]]
-    temp.B.list[[2]]<-B.list[[2]]
+    temp.B.list<-B.list
   }
   result.B.list<-list()
-  result.B.list[[1]]<-temp.B.list[[1]][(1:min(B,nrow(temp.B.list[[2]])))]
-  result.B.list[[2]]<-temp.B.list[[2]][(1:min(B,nrow(temp.B.list[[2]]))),]
+  result.B.list[[1]]<-temp.B.list[[1]][(1:min(B,length(temp.B.list[[2]])))]
+  result.B.list[[2]]<-temp.B.list[[2]][(1:min(B,length(temp.B.list[[2]])))]
   
-  if(num.causal==1){
-    single.set<-matrix(1:p,p,1)
-    single.marginal<-apply(single.set,1,marginal_likelihood,Sigma=Sigma,z=z,tau=tau.sample,p_S=1,y_sigma=y.var)
-    aa<-single.marginal-max(single.marginal,na.rm=T)
-    
-    prob.sum<-sum(exp(aa))
-    result.prob<-(exp(aa))/prob.sum
-  }else{
-    result.prob=PIP.func(result.B.list[[1]],result.B.list[[2]],p)
-  }
+  result.prob=NULL
+  
   conditional.S.list<-data.frame(Index=conditional.S,Z=z[conditional.S])
  
   rb1=result.B.list[[1]]
