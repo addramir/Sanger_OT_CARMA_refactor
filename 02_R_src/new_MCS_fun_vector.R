@@ -144,9 +144,8 @@ index.fun<-function(x,p){
 
 MCS_modified<-function(z,ld.matrix,Max.Model.Dim=1e+4,lambda,
                        num.causal=10,y.var=1,
-                       effect.size.prior=effect.size.prior,
                        outlier.switch,input.conditional.S.list=NULL,tau=1/0.05^2,
-                       epsilon=1e-3,inner.all.iter=10,outlier.BF.index=outlier.BF.index){
+                       epsilon=1e-3,inner.all.iter=10,outlier.BF.index){
   
   #### START
   
@@ -178,7 +177,6 @@ MCS_modified<-function(z,ld.matrix,Max.Model.Dim=1e+4,lambda,
   ########Feature learning for the fine-mapping step, such as learning the visited model space from the previous iterations#######
   
   B<-Max.Model.Dim
-  stored.result.prob<-rep(0,p)
   stored.bf<-0
   Sigma<-as.matrix(ld.matrix)
   
@@ -269,11 +267,9 @@ MCS_modified<-function(z,ld.matrix,Max.Model.Dim=1e+4,lambda,
       if(length(working.S)!=0){
         set.star<-data.frame(set.index=1:3,gamma.set.index=rep(NA,3),margin=rep(NA,3))
         for(i in 1:3){
-          aa<-set.gamma.margin[[i]]-current.log.margin
+          aa<-set.gamma.margin[[i]]
           aa<-aa-aa[which.max(aa)]
-          if(length(which(is.nan(aa)))!=0){
-            aa[which(is.nan(aa))]<-min(aa)
-          }
+       
           set.star$gamma.set.index[i] <-sample(1:length(set.gamma.margin[[i]]),1,prob=exp(aa))
           
           #set.star$gamma.set.index[i]=1#to delete
@@ -286,12 +282,9 @@ MCS_modified<-function(z,ld.matrix,Max.Model.Dim=1e+4,lambda,
           for(i in 2:length(set.gamma)){
             repeat{
               
-              aa<-set.gamma.margin[[i]]-current.log.margin
+              aa<-set.gamma.margin[[i]]
               aa<-aa-aa[which.max(aa)]
-              if(length(which(is.nan(aa)))!=0){
-                aa[which(is.nan(aa))]<-min(aa[!is.na(aa)])
-              }
-              
+  
               set.star$gamma.set.index[i]<-c(sample((1:length(set.gamma.margin[[i]])),
                                                     1,prob=exp(aa)))
               
@@ -348,18 +341,20 @@ MCS_modified<-function(z,ld.matrix,Max.Model.Dim=1e+4,lambda,
         
       }else{
         set.star<-data.frame(set.index=rep(1,3),gamma.set.index=rep(NA,3),margin=rep(NA,3))
-        aa<-set.gamma.margin[[2]]-current.log.margin
+        aa<-set.gamma.margin[[2]]
         aa<-aa-aa[which.max(aa)]
-        if(length(which(is.nan(aa)))!=0){
-          aa[which(is.nan(aa))]<-min(aa)
-        }
+     
         
-        set.star$gamma.set.index[2] <-c(sample((1:length(set.gamma.margin[[2]]))[order(exp(aa),decreasing = T)[1:(min(length(aa),floor(p/2)))]],
-                                               1,prob=exp(aa)[order(exp(aa),decreasing = T)[1:(min(length(aa),floor(p/2)))]]))
+        #set.star$gamma.set.index[2] <-c(sample((1:length(set.gamma.margin[[2]]))[order(exp(aa),decreasing = T)[1:(min(length(aa),floor(p/2)))]],
+        #                                       1,prob=exp(aa)[order(exp(aa),decreasing = T)[1:(min(length(aa),floor(p/2)))]]))
+        
+        decr_half_ind=order(exp(aa),decreasing = TRUE)[1:(min(length(aa),floor(p/2)))]
+        probs=exp(aa)[decr_half_ind]
+        set.star$gamma.set.index[2] <-sample(decr_half_ind,1,prob=probs)
         
         #set.star$gamma.set.index[2]=1#to delete 
         
-        set.star$margin[2]<-set.gamma.margin[[2]][  set.star$gamma.set.index[2]]
+        set.star$margin[2]<-set.gamma.margin[[2]][set.star$gamma.set.index[2]]
         
         S<-set.gamma[[2]][set.star$gamma.set.index[2],]
         

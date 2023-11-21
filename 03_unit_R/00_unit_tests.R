@@ -1,7 +1,7 @@
 setwd("~/Projects/Sanger_OT_CARMA_refactor/03_unit_R/")
 source("../02_R_src/00_CARMA_function.R")
 library(data.table)
-source("../01_test/CARMA_fixed_sigma.R")
+#source("../01_test/CARMA_fixed_sigma.R")
 
 library(CARMA)
 

@@ -3,7 +3,7 @@ load("Zero_MCH_run.RData")
 library(CARMA)
 library(Matrix)
 #source("CARMA_MCShotgun.R")
-source("new_MCS_fun.R")
+source("../02_R_src/new_MCS_fun_vector.R")
 ####
 z=z
 ld.matrix=ld
@@ -76,6 +76,9 @@ if(length(input.conditional.S.list)==0){
   conditional.S<-unique(conditional.S)
   S<-conditional.S
 }
+
+
+l=1
 
 for(l in 1:inner.all.iter){
   for(h in 1:10){
@@ -217,9 +220,13 @@ for(l in 1:inner.all.iter){
         aa[which(is.nan(aa))]<-min(aa)
       }
       
-      set.star$gamma.set.index[2] <-c(sample((1:length(set.gamma.margin[[2]]))[order(exp(aa),decreasing = T)[1:(min(length(aa),floor(p/2)))]],
-                                             1,prob=exp(aa)[order(exp(aa),decreasing = T)[1:(min(length(aa),floor(p/2)))]]))
-      set.star$margin[2]<-set.gamma.margin[[2]][  set.star$gamma.set.index[2]]
+      
+      decr_half_ind=order(exp(aa),decreasing = TRUE)[1:(min(length(aa),floor(p/2)))]
+      probs=exp(aa)[decr_half_ind]
+      set.star$gamma.set.index[2] <-sample(decr_half_ind,1,prob=probs)
+     
+      
+      set.star$margin[2]<-set.gamma.margin[[2]][set.star$gamma.set.index[2]]
       
       S<-set.gamma[[2]][set.star$gamma.set.index[2],]
       

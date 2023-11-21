@@ -47,7 +47,7 @@ CARMA_spike_slab_noEM_rcpp <- function(z, ld, lambda = 1, rho.index = 0.99, BF.i
   
   t0=Sys.time()
   
-  effect.size.prior='Spike-slab'
+  #effect.size.prior='Spike-slab'
   
   library(Rcpp)
   source(paste0(path_to_src,"/CARMA_miscs.R"))
@@ -71,7 +71,6 @@ CARMA_spike_slab_noEM_rcpp <- function(z, ld, lambda = 1, rho.index = 0.99, BF.i
                            Max.Model.Dim=Max.Model.Dim,lambda = lambda,
                            outlier.switch=outlier.switch,tau=tau,
                            num.causal = num.causal,y.var=y.var,
-                           effect.size.prior=effect.size.prior,
                            inner.all.iter = all.inner.iter,outlier.BF.index=outlier.BF.index)
   ########Running CARMA######## 
   for(g in 1:all.iter){ 
@@ -84,14 +83,13 @@ CARMA_spike_slab_noEM_rcpp <- function(z, ld, lambda = 1, rho.index = 0.99, BF.i
     ac1=all.C.list[[1]][[1]]
     previous.result<-mean(ac1[1:round(length(ac1)/4)])
     
-    prior.prob.list<-list(NULL)
     
     all.C.list<-MCS_modified(z=z,ld,input.conditional.S.list = all.C.list[[4]],
                              Max.Model.Dim=Max.Model.Dim,
                              y.var=y.var,num.causal = num.causal,epsilon=epsilon.list,
                              outlier.switch=outlier.switch,tau=tau,
                              lambda = lambda,
-                             effect.size.prior=effect.size.prior,inner.all.iter = all.inner.iter,
+                             inner.all.iter = all.inner.iter,
                              outlier.BF.index=outlier.BF.index)
 
     ac1=all.C.list[[1]][[1]]
