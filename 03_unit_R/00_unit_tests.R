@@ -131,3 +131,69 @@ x=R3$all.C.list[[1]][[2]]
 l=apply(x,1,FUN=paste0,collapse="")
 table(duplicated(l))
 
+
+
+
+
+library(RcppCNPy)
+z_full=fread("02_test_z.csv",header=T,sep=",",data.table=F)
+ld=npyLoad("02_test_ld.npy")
+z=z_full[,"z"]
+
+R1=CARMA_spike_slab_noEM_rcpp(
+  z,   
+  ld,
+  lambda=1,
+  path_to_src="../02_R_src/",
+  sparse_fun=FALSE)
+
+R2=CARMA_spike_slab_noEM_rcpp(
+  z,   
+  ld,
+  lambda=1,
+  path_to_src="../02_R_src/",
+  sparse_fun=TRUE)
+
+#R3=CARMA_fixed_sigma(z.list = list(z),ld.list = list(ld),lambda.list = list(1),output.labels = NULL)
+R3=CARMA(z.list = list(z),ld.list = list(ld),lambda.list = list(1),output.labels = NULL)
+R3=R3[[1]]
+
+R1$Outliers
+R2$Outliers
+R3$Outliers
+cor(cbind(R1$PIPs,R2$PIPs,R3$PIPs))
+
+
+
+
+
+
+
+ld=matrix(rep(0,21*21),c(21,21))
+diag(ld)=1
+ld[1,2]=ld[2,1]=1
+
+z=rep(7,21)
+
+R1=CARMA_spike_slab_noEM_rcpp(
+  z,   
+  ld,
+  lambda=1,
+  path_to_src="../02_R_src/",
+  sparse_fun=FALSE)
+
+R2=CARMA_spike_slab_noEM_rcpp(
+  z,   
+  ld,
+  lambda=1,
+  path_to_src="../02_R_src/",
+  sparse_fun=TRUE)
+
+#R3=CARMA_fixed_sigma(z.list = list(z),ld.list = list(ld),lambda.list = list(1),output.labels = NULL)
+R3=CARMA(z.list = list(z),ld.list = list(ld),lambda.list = list(1),output.labels = NULL)
+R3=R3[[1]]
+
+R1$Outliers
+R2$Outliers
+R3$Outliers
+cor(cbind(R1$PIPs,R2$PIPs,R3$PIPs))

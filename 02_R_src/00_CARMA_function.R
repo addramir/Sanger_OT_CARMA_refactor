@@ -6,7 +6,6 @@
 #' @param ld Numeric matrix representing the linkage disequilibrium (LD) matrix.
 #' @param lambda Numeric, regularization parameter controlling the strength of the L1 penalty.
 #' @param rho.index Numeric, threshold for computing credible sets in CARMA analysis.
-#' @param BF.index Numeric, Bayes Factor threshold for identifying outlier models.
 #' @param Max.Model.Dim Numeric, maximum allowed dimension for the causal model.
 #' @param all.iter Integer, the total number of iterations to run the CARMA analysis.
 #' @param all.inner.iter Integer, the number of inner iterations in each CARMA iteration.
@@ -40,7 +39,7 @@
 #' CARMA, Spike-and-Slab, Bayesian analysis
 #'
 #' @export
-CARMA_spike_slab_noEM_rcpp <- function(z, ld, lambda = 1, rho.index = 0.99, BF.index = 10, Max.Model.Dim = 2e+5, 
+CARMA_spike_slab_noEM_rcpp <- function(z, ld, lambda = 1, rho.index = 0.99, Max.Model.Dim = 2e+5, 
                                        all.iter = 3, all.inner.iter = 10, epsilon.threshold = 1e-5, num.causal = 10, 
                                        y.var = 1, tau = 0.04, outlier.switch = TRUE, outlier.BF.index = 1/3.2, 
                                        path_to_src, sparse_fun = FALSE) {
@@ -74,11 +73,6 @@ CARMA_spike_slab_noEM_rcpp <- function(z, ld, lambda = 1, rho.index = 0.99, BF.i
                            inner.all.iter = all.inner.iter,outlier.BF.index=outlier.BF.index)
   ########Running CARMA######## 
   for(g in 1:all.iter){ 
-    
-    delete.list<-integer(0)
-    if(outlier.switch & (nrow(all.C.list[[4]])!=0)){
-      delete.list<-all.C.list[[4]]$Index
-    }
     
     ac1=all.C.list[[1]][[1]]
     previous.result<-mean(ac1[1:round(length(ac1)/4)])
