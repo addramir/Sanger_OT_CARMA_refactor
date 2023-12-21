@@ -35,6 +35,8 @@ R2$Outliers
 R3$Outliers
 cor(cbind(R1$PIPs,R2$PIPs,R3$PIPs))
 
+#fwrite(x=as.data.frame(R3$PIPs),file="01_test_PIPs.txt",col.names=T,sep="\t",quote=F)
+
 #test2
 
 z_full=fread("02_APOE_z.csv",header=T,sep=",",data.table=F)
